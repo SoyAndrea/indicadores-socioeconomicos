@@ -1,0 +1,72 @@
+---
+title: "<H2>El envejecimiento decente y seguro en Argentina, ¿depende del género?</H2>"
+subtitle: "Brechas de género en relación con indicadores de seguridad económica para la población en edad jubilatoria. Argentina, 2018-2023."
+author: "Gomez Vargas, Andrea | Iummato, Luciana | Pesce Andrea Gisele"
+institute: "<br>Indicadores Socioeconómicos<br>Maestría en Generación y Análisis de Información Estadística<br> UNTREF"
+date: "10/12/2024"
+date-format: "DD [de] MMMM [de] YYYY"
+lang: es
+format: 
+  revealjs: 
+    theme: custom.scss
+    self-contained: true
+    slide-number: c/t
+    smaller: true
+    logo: untref.png
+    css: logo.css
+    #footer: "[https://github.com/SoyAndrea/Indicadores-economicos](https://github.com/SoyAndrea/Indicadores-economicos)"
+---
+
+## Planteamiento del problema y Objetivo
+
+### Objetivo general:
+ 
+ 
+<br>
+
+### Objetivos específicos:
+
+
+
+
+
+
+
+
+## Estado actual del conocimiento sobre el tema
+<br>
+
+
+
+## Metodología 
+
+- *Período de análisis:* Años 2018 a 2023.
+- *Cobertura geográfica:* Total del país
+
+###  Indicadores/variables:
+ 
+
+
+## Primeros resultados
+
+::: {.panel-tabset}
+
+
+
+
+
+
+:::
+
+## Fuentes de información
+<br>
+
+| Organismo            | Fuente de Información   | Período | 
+|------- |----------------------|---------|
+| INDEC |  Censo Nacional de Población, Hogares y Vivienda 2022 | 2022| 
+| INDEC | Encuesta Permanente de Hogares (EPH) total urbano.     | Tercer trimestre 2018 -2023 | 
+| INDEC |  Encuesta Nacional de Uso del Tiempo (ENUT 2021). | 2021 | 
+| Ministerio de Capital Humano | Boletín Estadístico de la Seguridad Social | 2018 - 2023 | 
+
+
+
