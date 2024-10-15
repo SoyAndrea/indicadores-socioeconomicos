@@ -30,12 +30,45 @@ salud2 <- read.xlsx("data/datos.xlsx", sheet = "salud2")
 
 ## Censo
 
+### Jubilación
+
+```{r}
+jubilacion <- jubilacion %>% 
+  mutate(sexo = factor(sexo, levels = c("total", "mujeres", "varones")),
+         cobertura = case_when(
+           sexo == "total" ~ "Población en edad de jubilarse",
+           sexo == "mujeres" ~ "Mujeres de 60 años y más",
+           sexo == "varones" ~ "Varones de 65 años y más"),
+         cobertura = fct_relevel(cobertura, c("Población en edad de jubilarse", 
+                                              "Mujeres de 60 años y más", 
+                                              "Varones de 65 años y más")))
+
+ggplot(jubilacion, aes(cobertura, porcentaje, fill = sexo)) +
+  geom_col(width = 0.5) +
+  ylim(c(0,100)) +
+  scale_fill_manual(values = c("#fb8b24","#d90368","#820263")) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  ) +
+  geom_text(aes(label = porcentaje), 
+            position = position_stack(vjust = 0.9), 
+            size = 4, colour = "white") +
+  labs(
+    x = " ",
+    y =  "Porcentaje",
+    title = "Población en edad jubilatoria que percibe jubilación o pensión. Total del país. Año 2022",
+    caption = "Fuente: elaboración propia a partir de datos del INDEC, Censo Nacional de Población, Hogares y Vivienda 2022"
+  )
+```
+
+
 
 ## EPH
 
-```{r}
+### Pobreza
 
-
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 gpobreza <- pobreza %>% 
   select(1:2,5:6) %>% 
@@ -59,10 +92,74 @@ ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
     x = "periodo",
     y = "porcentaje",
     fill = "condición",
-    title = "Distribución porcentual de las jubilaciones del sistema integrado previsional, \npor sexo y adhesión a moratoria. Total urbano. Años 2018-2013",
-    caption = "Fuente: elaboración propia a partir de datos de Informe EPH - INDEC"
+    title = "Población de 65 años y más según condición de pobreza. Total 31 aglomerados. \nPrimer semestre 2018-segundo semestre 2023",
+    caption = "Fuente: elaboración propia a partir de datos de informes técnicos INDEC - EPH: Incidencia de la Pobreza y de la Indigencia"
   )
   
+```
+
+
+### Estrato
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+estrato <- estrato %>% 
+  filter(Grupo ==  "Total",
+         Sexo != "Total") %>% 
+  select(1, 3, 9:11) %>% 
+  pivot_longer(cols = c(3:5), names_to = "tipo", values_to = "porcentaje")
+
+
+
+
+ggplot(estrato, aes(Sexo, porcentaje, fill = tipo)) +
+  geom_col() +
+ scale_fill_manual(values = c("#143939","#297373", "#389e9e"))+
+ facet_grid(~ANO4) +
+#   theme_light() +
+  labs(
+    title = "Distribución de la población de 60 años y más por sexo,\nsegún estrato generacional del hogar. Total nacional urbano. Años 2018-2023",
+    y = "porcentaje",
+    caption = "Fuente: elaboración propia a partir de datos de la Encuesta Permanente de Hogares total urbano - INDEC",
+    x = " "
+  ) +
+  geom_text(aes(label = porcentaje, group = Sexo),
+            position = position_stack(vjust = .5),size = 4, colour = "white") +
+ theme(legend.position = "top")
+```
+
+### Ingresos
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ingresos <- ingresos %>% 
+  filter(CH04 != "Total") %>% 
+  select(1,2, 7:9) %>% 
+  pivot_longer(cols = c(3:5), names_to = "tipo", values_to = "porcentaje") %>% 
+  mutate(tipo = 
+           case_when(tipo == "Ingresos.laborales" ~ "ingresos laborales",
+                     tipo == "Jubilación.o.pensión" ~ "jubilación o pensión",
+                     tipo == "Otros.ingresos.no.laborales" ~ "otros ingresos no laborales")) %>% 
+  rename(ano = "Año", sexo =  CH04)
+
+
+ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
+  geom_point(size = 3) +
+  geom_line(linetype = 1) +
+  facet_wrap(~sexo) +
+  ylim(c(0,100)) +
+  scale_color_manual(values = c("#143939","#297373", "#389e9e"))+
+ # facet_grid(ano ~ tipo) +
+ theme_bw() +
+  labs(
+    title = "Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso. \nTotal nacional urbano. Años 2018-2023",
+    y = "porcentaje",
+    caption = "Fuente: elaboración propia a partir de datos de la Encuesta Permanente de Hogares total urbano - INDEC",
+    x = " "
+  ) +
+  geom_text(aes(label = porcentaje, group = tipo),
+            position = position_stack(vjust = 1),size = 3, colour = "black") +
+ theme(legend.position = "top")
+
 ```
 
 
