@@ -12,7 +12,7 @@ library(tidyverse)
 library(openxlsx)
 ```
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 # EPH
 pobreza <- read.xlsx("data/datos.xlsx", sheet = "pobreza")
 estrato <- read.xlsx("data/datos.xlsx", sheet = "estrato")
@@ -32,7 +32,7 @@ salud2 <- read.xlsx("data/datos.xlsx", sheet = "salud2")
 
 ### Jubilación
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 jubilacion <- jubilacion %>% 
   mutate(sexo = factor(sexo, levels = c("total", "mujeres", "varones")),
          cobertura = case_when(
@@ -46,7 +46,8 @@ jubilacion <- jubilacion %>%
 ggplot(jubilacion, aes(cobertura, porcentaje, fill = sexo)) +
   geom_col(width = 0.5) +
   ylim(c(0,100)) +
-  scale_fill_manual(values = c("#fb8b24","#d90368","#820263")) +
+  #scale_fill_manual(values = c("#fb8b24","#d90368","#820263")) +
+  scale_fill_manual(values = c("#001524","#3c6e71","#15616d")) +
   theme_bw() +
   theme(
     legend.position = "none"
@@ -62,11 +63,25 @@ ggplot(jubilacion, aes(cobertura, porcentaje, fill = sexo)) +
   )
 ```
 
+## Salud 
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(salud, aes(cobertura)) +
+  geom_bar()
+
+```
+
+## Salud 2
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+```
 
 ## EPH
 
 ### Pobreza
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -100,6 +115,7 @@ ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
 
 
 ### Estrato
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -161,6 +177,8 @@ ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
  theme(legend.position = "top")
 
 ```
+
+
 
 
 ## Capital Humano
