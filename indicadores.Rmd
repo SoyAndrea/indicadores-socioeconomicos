@@ -2,7 +2,12 @@
 title: "indicadores"
 author: "Andrea Gomez Vargas"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -32,7 +37,7 @@ salud2 <- read.xlsx("data/datos.xlsx", sheet = "salud2")
 
 ### Jubilación
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 jubilacion <- jubilacion %>% 
   mutate(sexo = factor(sexo, levels = c("total", "mujeres", "varones")),
          cobertura = case_when(
@@ -58,24 +63,47 @@ ggplot(jubilacion, aes(cobertura, porcentaje, fill = sexo)) +
   labs(
     x = " ",
     y =  "Porcentaje",
-    title = "Población en edad jubilatoria que percibe jubilación o pensión. Total del país. Año 2022",
-    caption = "Fuente: elaboración propia a partir de datos del INDEC, Censo Nacional de Población, Hogares y Vivienda 2022"
+    title = "Población en viviendas particulares en edad jubilatoria que percibe jubilación o pensión. \nTotal del país. Año 2022",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Censo Nacional de Población, Hogares y Viviendas 2022."
   )
 ```
 
 ## Salud 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-ggplot(salud, aes(cobertura)) +
-  geom_bar()
 
-```
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 
-## Salud 2
+salud2 <- salud2 %>% 
+  mutate(pp_obra_social = round(obra_social/poblacion_total*100,2),
+         pp_plan_estatal = round(plan_estatal/poblacion_total*100,2),
+         pp_no_tiene = round(no_tiene/poblacion_total*100,2)
+         ) %>% 
+  filter(grupo_edad == "total") %>% 
+  select(1, 7:9) %>% 
+  pivot_longer(cols = c(2:4),names_to = "tipo", values_to = "value") %>% 
+  mutate(tipo = case_when( tipo == "pp_no_tiene" ~ 
+                             "No tiene obra social, prepaga ni plan estatal",
+                           tipo == "pp_plan_estatal" ~ "Programas o planes estatales de salud",
+                           tipo == "pp_obra_social" ~ "Obra social o prepaga (incluye PAMI)")
+  )
+  
 
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
+ggplot(salud2, aes(sexo,value, fill = tipo)) +
+  geom_col() +
+  coord_flip() +
+  #scale_fill_viridis_d(option = "a") +
+  #scale_fill_manual(values = c("#5e548e","#297373", "#389e9e"))+
+  scale_fill_manual(values = c("#f7b801","#7678ed", "#3d348b"))+
+  theme_bw() +
+  labs(
+    title = "Población en viviendas particulares en edad jubilatoria por sexo registrado al nacer según tenencia de cobertura de salud. \nTotal del pais. Año 2022",
+    y = "porcentaje",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Censo Nacional de Población, Hogares y Viviendas 2022.",
+    x = " "
+  ) +
+  geom_text(aes(label = value),
+            position = position_stack(vjust = .5),size = 4, colour = "black") +
+ theme(legend.position = "top")
 ```
 
 ## EPH
@@ -83,12 +111,13 @@ ggplot(salud, aes(cobertura)) +
 ### Pobreza
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 
 gpobreza <- pobreza %>% 
   select(1:2,5:6) %>% 
   pivot_longer(cols = c(3:4), names_to = "pobreza", values_to = "value") %>% 
-  mutate(periodo =  paste0(anio, "-", semestre)) 
+  mutate(periodo =  paste0(anio, "-", semestre),
+         pobreza = ifelse(pobreza == "no_pobres", "No pobre", "Pobre")) 
 
 
 ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
@@ -108,7 +137,7 @@ ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
     y = "porcentaje",
     fill = "condición",
     title = "Población de 65 años y más según condición de pobreza. Total 31 aglomerados. \nPrimer semestre 2018-segundo semestre 2023",
-    caption = "Fuente: elaboración propia a partir de datos de informes técnicos INDEC - EPH: Incidencia de la Pobreza y de la Indigencia"
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Informes técnicos EPH: Incidencia de la Pobreza y de la Indigencia"
   )
   
 ```
@@ -117,7 +146,7 @@ ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
 ### Estrato
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 
 estrato <- estrato %>% 
   filter(Grupo ==  "Total",
@@ -136,7 +165,7 @@ ggplot(estrato, aes(Sexo, porcentaje, fill = tipo)) +
   labs(
     title = "Distribución de la población de 60 años y más por sexo,\nsegún estrato generacional del hogar. Total nacional urbano. Años 2018-2023",
     y = "porcentaje",
-    caption = "Fuente: elaboración propia a partir de datos de la Encuesta Permanente de Hogares total urbano - INDEC",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Encuesta Permanente de Hogares total urbano",
     x = " "
   ) +
   geom_text(aes(label = porcentaje, group = Sexo),
@@ -146,7 +175,7 @@ ggplot(estrato, aes(Sexo, porcentaje, fill = tipo)) +
 
 ### Ingresos
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 ingresos <- ingresos %>% 
   filter(CH04 != "Total") %>% 
   select(1,2, 7:9) %>% 
@@ -160,20 +189,21 @@ ingresos <- ingresos %>%
 
 ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
   geom_point(size = 3) +
-  geom_line(linetype = 1) +
+  geom_line(linetype = 2,linewidth = 1) +
   facet_wrap(~sexo) +
   ylim(c(0,100)) +
   scale_color_manual(values = c("#143939","#297373", "#389e9e"))+
  # facet_grid(ano ~ tipo) +
  theme_bw() +
   labs(
-    title = "Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso. \nTotal nacional urbano. Años 2018-2023",
+    title = "Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso. Total nacional urbano. Años 2018-2023",
     y = "porcentaje",
-    caption = "Fuente: elaboración propia a partir de datos de la Encuesta Permanente de Hogares total urbano - INDEC",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Encuesta Permanente de Hogares total urbano",
     x = " "
   ) +
-  geom_text(aes(label = porcentaje, group = tipo),
-            position = position_stack(vjust = 1),size = 3, colour = "black") +
+  geom_text(aes(label = porcentaje, group = tipo),vjust = -1) +
+  # geom_text(aes(label = porcentaje, group = tipo),
+  #           position = position_stack(vjust = 1),size = 3, colour = "black") +
  theme(legend.position = "top")
 
 ```
@@ -183,7 +213,7 @@ ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
 
 ## Capital Humano
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
 gbess <- bess %>% 
   filter(ano %in% c(2018:2023)) %>% 
   mutate(pp_con_v = round(con_moratoria_v/total_v*100,2),
@@ -217,8 +247,9 @@ ggplot(gbess, aes(sexo, value, fill = jubilacion))+
     x = " ",
     y = "porcentaje",
     fill = "percepción jubilatoria",
-    title = "Distribución porcentual de las jubilaciones del sistema integrado previsional, \npor sexo y adhesión a moratoria. Total del país. Años 2018-2013",
-    caption = "Fuente: elaboración propia a partir de datos del Boletín Estadístico de la Seguridad Social, Ministerio de Capital Humano"
-  )
+    title = "Distribución porcentual de las jubilaciones del sistema integrado previsional, por sexo y adhesión a moratoria. Total del país. Años 2018-2013",
+    caption = "Fuente: elaboración propia con base en datos del Ministerio de Capital Humano - Boletín Estadístico de la Seguridad Social")
 ```
+
+
 

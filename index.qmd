@@ -3,7 +3,7 @@ title: "<H2>El envejecimiento decente y seguro en Argentina, ¿depende del géne
 subtitle: "Brechas de género en relación con indicadores de seguridad económica para la población en edad jubilatoria. Argentina, 2018-2023."
 author: "Gomez Vargas, Andrea | Iummato, Luciana | Pesce Andrea Gisele"
 institute: "<br>Indicadores Socioeconómicos<br>Maestría en Generación y Análisis de Información Estadística<br> UNTREF"
-date: "10/12/2024"
+date: "10/21/2024"
 date-format: "DD [de] MMMM [de] YYYY"
 lang: es
 format: 
