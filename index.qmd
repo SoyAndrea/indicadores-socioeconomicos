@@ -1,6 +1,5 @@
 ---
-title: "<H2>El envejecimiento decente y seguro en Argentina, ¿depende del género?</H2>"
-subtitle: "Brechas de género en relación con indicadores de seguridad económica para la población en edad jubilatoria. Argentina, 2018-2023."
+title: "<H2>Envejecimiento en la Argentina: brechas de género en la edad de retiro del mercado de trabajo. <br>Años 2018-2023.</H2>"
 author: "Gomez Vargas, Andrea | Iummato, Luciana | Pesce Andrea Gisele"
 institute: "<br>Indicadores Socioeconómicos<br>Maestría en Generación y Análisis de Información Estadística<br> UNTREF"
 date: "10/21/2024"
@@ -8,43 +7,95 @@ date-format: "DD [de] MMMM [de] YYYY"
 lang: es
 format: 
   revealjs: 
-    theme: custom.scss
+    theme: [default, custom.scss]
     self-contained: true
     slide-number: c/t
     smaller: true
     logo: untref.png
     css: logo.css
+    incremental: true  
     #footer: "[https://github.com/SoyAndrea/Indicadores-economicos](https://github.com/SoyAndrea/Indicadores-economicos)"
 ---
 
-## Planteamiento del problema y Objetivo
+## Planteamiento del problema 
+
+<br>
+<br>
+
+- Envejecimiento poblacional y feminización de la vejez
+
+- Aumento de la pobreza, pérdida de seguridad económica en la vejez
+
+- Desigualdades en la inserción laboral entre varones y mujeres
+
+<br>
+
+- > Propósito: explorar las brechas de género en la vejez en relación con la seguridad económica a través de: composición de los hogares y distribución de las tareas de cuidado, cobertura previsional, cobertura de salud, adhesión a moratoria e ingresos.
+
+
+## Estado actual del conocimiento sobre el tema
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+Factores que influyen en la seguridad económica en la vejez^[fuente: Huenchuan S. & Guzmán, J.M. (2006) Seguridad Económica y Pobreza en la Vejez. CEPAL - CELADE.]
+
+![](ima2.png){width=75%}
+
+:::
+
+::: {.column width="50%"}
+
+Fuentes de la seguridad económica en la vejez
+
+![](ima1.png){width=85%}
+
+
+
+:::
+
+::::
+
+
+## Objetivos
 
 ### Objetivo general:
  
+- Analizar las brechas de género en la seguridad económica en la vejez entre 2018 y 2023, en la población argentina.
  
 <br>
 
 ### Objetivos específicos:
 
 
+- Caracterizar la composición de los hogares y distribución de las tareas de cuidado, la cobertura previsional, la cobertura de salud, la adhesión a moratoria y los ingresos en las mujeres de 60 años y más, y en los varones de 65 años y más, en el período 2018-2023.
 
 
+- Analizar las brechas de género de acuerdo a la caracterización de este grupo poblacional, la seguridad económica y su evolución durante el período, identificando la existencia de posibles puntos de inflexión o sub-períodos.
 
-
-
-
-## Estado actual del conocimiento sobre el tema
-<br>
 
 
 
 ## Metodología 
 
-- *Período de análisis:* Años 2018 a 2023.
-- *Cobertura geográfica:* Total del país
+- **Población bajo estudio:** Personas en edad jubilatoria: mujeres a partir de 60 años y más, y varones a partir de 65 años y más.
+      
+
+- **Período de análisis:** Años 2018 a 2023.
+
+
+- **Cobertura geográfica:** Total del país
 
 ###  Indicadores/variables:
- 
+
+- Población de 65 años y más según condición de pobreza. Total 31 aglomerados. Primer semestre 2018-segundo semestre 2023. 
+
+- Población en viviendas particulares en edad jubilatoria que percibe jubilación o pensión según sexo registrado al nacer. Total del país. Año 2022.
+
+- Distribución porcentual de las jubilaciones del sistema integrado previsional, por sexo y adhesión a moratoria. Total del país. Años 2018-2023.
+
+- Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso según sexo. Total nacional urbano. Años 2018 -2023.
 
 
 ## Primeros resultados
@@ -52,21 +103,209 @@ format:
 ::: {.panel-tabset}
 
 
+### Condición de pobreza
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,  fig.width= 10, fig.height= 5}
+library(tidyverse)
+library(openxlsx)
+
+# EPH
+pobreza <- read.xlsx("data/datos.xlsx", sheet = "pobreza")
+estrato <- read.xlsx("data/datos.xlsx", sheet = "estrato")
+ingresos  <- read.xlsx("data/datos.xlsx", sheet = "ingresos")
+
+# CAPITAL HUMANO 
+bess <- read.xlsx("data/datos.xlsx", sheet = "bess-1")
+
+# CENSO 
+salud  <- read.xlsx("data/datos.xlsx", sheet = "salud")
+jubilacion <- read.xlsx("data/datos.xlsx", sheet = "jubilacion")
+salud2 <- read.xlsx("data/datos.xlsx", sheet = "salud2")
+
+
+gpobreza <- pobreza %>% 
+  select(1:2,5:6) %>% 
+  pivot_longer(cols = c(3:4), names_to = "pobreza", values_to = "value") %>% 
+  mutate(periodo =  paste0(anio, "-", semestre),
+         pobreza = ifelse(pobreza == "no_pobres", "No pobre", "Pobre")) 
+
+
+ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
+  geom_col() +
+  scale_fill_manual(values = c("#297373", "#e9d758")) +
+  theme_bw() +
+  theme(
+    legend.position = "top"
+  ) +
+  coord_flip() +
+  scale_x_discrete(limits=rev) +
+  geom_text(aes(label = value, group = pobreza), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, colour = "black") +
+  labs(
+    x = "periodo",
+    y = "porcentaje",
+    fill = "condición",
+    title = "Población de 65 años y más según condición de pobreza. Total 31 aglomerados.",
+    subtitle = "Primer semestre 2018-segundo semestre 2023",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Informes técnicos EPH: Incidencia de la Pobreza y de la Indigencia"
+  )
+```
+
+### Composición de los hogares
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
+
+estrato <- estrato %>% 
+  filter(Grupo ==  "Total",
+         Sexo != "Total") %>% 
+  select(1, 3, 9:11) %>% 
+  pivot_longer(cols = c(3:5), names_to = "tipo", values_to = "porcentaje")
 
 
 
 
+ggplot(estrato, aes(Sexo, porcentaje, fill = tipo)) +
+  geom_col() +
+ scale_fill_manual(values = c("#143939","#297373", "#389e9e"))+
+ facet_grid(~ANO4) +
+#   theme_light() +
+  labs(
+    title = "Distribución de la población de 60 años y más por sexo,según estrato generacional del hogar.",
+    subtitle = "Total nacional urbano. Años 2018-2023",
+    y = "porcentaje",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Encuesta Permanente de Hogares total urbano",
+    x = " "
+  ) +
+  geom_text(aes(label = porcentaje, group = Sexo),
+            position = position_stack(vjust = .5),size = 4, colour = "white") +
+ theme(legend.position = "top")
+```
+
+### Cobertura previsional
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
+jubilacion <- jubilacion %>% 
+  mutate(sexo = factor(sexo, levels = c("total", "mujeres", "varones")),
+         cobertura = case_when(
+           sexo == "total" ~ "Población en edad de jubilarse",
+           sexo == "mujeres" ~ "Mujeres de 60 años y más",
+           sexo == "varones" ~ "Varones de 65 años y más"),
+         cobertura = fct_relevel(cobertura, c("Población en edad de jubilarse", 
+                                              "Mujeres de 60 años y más", 
+                                              "Varones de 65 años y más")))
+
+ggplot(jubilacion, aes(cobertura, porcentaje, fill = sexo)) +
+  geom_col(width = 0.5) +
+  ylim(c(0,100)) +
+  #scale_fill_manual(values = c("#fb8b24","#d90368","#820263")) +
+  scale_fill_manual(values = c("#001524","#3c6e71","#15616d")) +
+  theme_bw() +
+  theme(
+    legend.position = "none"
+  ) +
+  geom_text(aes(label = porcentaje), 
+            position = position_stack(vjust = 0.9), 
+            size = 4, colour = "white") +
+  labs(
+    x = " ",
+    y =  "Porcentaje",
+    title = "Población en viviendas particulares en edad jubilatoria que percibe jubilación o pensión.",
+    subtitle = "Total del país. Año 2022",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Censo Nacional de Población, Hogares y Viviendas 2022."
+  )
+```
+
+
+### Percepción de jubilación por moratoria
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
+gbess <- bess %>% 
+  filter(ano %in% c(2018:2023)) %>% 
+  mutate(pp_con_v = round(con_moratoria_v/total_v*100,2),
+         pp_sin_v = round(sin_moratoria_v/total_v*100,2),
+         pp_con_m = round(con_moratoria_m/total_m*100,2),
+         pp_sin_m = round(sin_moratoria_m/total_m*100,2)
+         ) %>% 
+  select(1, 8:11) %>% 
+  pivot_longer(cols = c(2:5),names_to = "porcentaje", values_to = "value") %>% 
+  mutate(sexo = case_when(porcentaje %in% c("pp_con_m","pp_sin_m") ~ "mujeres",
+                          TRUE ~ "varones"),
+         jubilacion =  case_when(porcentaje %in% c("pp_con_m","pp_con_v") ~ "con moratoria",
+                          TRUE ~ "sin moratoria")
+         )
+
+
+ggplot(gbess, aes(sexo, value, fill = jubilacion))+
+  geom_col() +
+  facet_wrap(~ ano, nrow = 1) +
+  #coord_flip() +
+  #scale_fill_brewer(palette = "Set2") +
+  scale_fill_manual(values = c("#297373", "#e9d758")) +
+  theme_bw() +
+  theme(
+    legend.position = "top"
+  ) +
+  geom_text(aes(label = value, group = jubilacion), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, colour = "black") +
+  labs(
+    x = " ",
+    y = "porcentaje",
+    fill = "percepción jubilatoria",
+    title = "Distribución porcentual de las jubilaciones del sistema integrado previsional, por sexo y adhesión a moratoria.",
+    subtitle = "Total del país. Años 2018-2013",
+    caption = "Fuente: elaboración propia con base en datos del Ministerio de Capital Humano - Boletín Estadístico de la Seguridad Social")
+```
+
+
+### Ingresos
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
+ingresos <- ingresos %>% 
+  filter(CH04 != "Total") %>% 
+  select(1,2, 7:9) %>% 
+  pivot_longer(cols = c(3:5), names_to = "tipo", values_to = "porcentaje") %>% 
+  mutate(tipo = 
+           case_when(tipo == "Ingresos.laborales" ~ "ingresos laborales",
+                     tipo == "Jubilación.o.pensión" ~ "jubilación o pensión",
+                     tipo == "Otros.ingresos.no.laborales" ~ "otros ingresos no laborales")) %>% 
+  rename(ano = "Año", sexo =  CH04)
+
+
+ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
+  geom_point(size = 3) +
+  geom_line(linetype = 2,linewidth = 1) +
+  facet_wrap(~sexo) +
+  ylim(c(0,100)) +
+ # scale_color_manual(values = c("#143939","#297373", "#389e9e"))+
+ scale_color_brewer(palette = "Dark2") +
+ theme_bw() +
+  labs(
+    title = "Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso.",
+    subtitle = "Total nacional urbano. Años 2018-2023",
+    y = "porcentaje",
+    caption = "Fuente: elaboración propia con base en datos del INDEC. Encuesta Permanente de Hogares total urbano",
+    x = " "
+  ) +
+  geom_text(aes(label = porcentaje, group = tipo),vjust = -1) +
+ theme(legend.position = "top")
+
+```
 :::
 
 ## Fuentes de información
 <br>
 
-| Organismo            | Fuente de Información   | Período | 
-|------- |----------------------|---------|
-| INDEC |  Censo Nacional de Población, Hogares y Vivienda 2022 | 2022| 
-| INDEC | Encuesta Permanente de Hogares (EPH) total urbano.     | Tercer trimestre 2018 -2023 | 
-| INDEC |  Encuesta Nacional de Uso del Tiempo (ENUT 2021). | 2021 | 
-| Ministerio de Capital Humano | Boletín Estadístico de la Seguridad Social | 2018 - 2023 | 
+| Organismo            | Fuente de información   | Período | 
+|---------- |----------------------|---------|
+| INDEC | Censo Nacional de Población, Hogares y Vivienda 2022 | 2022| 
+| INDEC | Encuesta Permanente de Hogares (EPH) total urbano.     | Años 2018 -2023 | 
+| INDEC | Encuesta Nacional de Uso del Tiempo (ENUT 2021). | Año 2021 | 
+| Ministerio de Capital Humano | Boletín Estadístico de la Seguridad Social | Años 2018 - 2023 | 
 
 
 

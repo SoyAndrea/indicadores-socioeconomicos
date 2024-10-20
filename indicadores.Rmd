@@ -251,5 +251,25 @@ ggplot(gbess, aes(sexo, value, fill = jubilacion))+
     caption = "Fuente: elaboración propia con base en datos del Ministerio de Capital Humano - Boletín Estadístico de la Seguridad Social")
 ```
 
+```{r}
+# Datos para el gráfico
+data <- data.frame(
+  category = c("Ciclo Vital \nindividual y \nfamiliar", "Sistemas de \nprotección \nsocial", "Biografías \ngeneracionales", "Biografías \npersonales"),
+  value = rep(1, 4) # Para dividir en partes iguales
+)
+
+ggplot(data, aes(x = 2, y = value, fill = category)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) + # Ajuste para hacer la dona
+  theme_void() + # Quitar ejes y fondo
+  theme(legend.position = "none") + # Opcional: ocultar leyenda
+  geom_text(aes(label = category), position = position_stack(vjust = 0.5)) + # Texto dentro de las secciones
+  #annotate("text", x = 0, y = 0, label = "Seguridad Económica", size = 6, fontface = "bold") + # Texto en el centro
+  scale_fill_brewer(palette = "PRGn") + # Colores opcionales
+  theme(plot.background = element_rect(fill = "#145357")) 
+```
+
+
 
 
