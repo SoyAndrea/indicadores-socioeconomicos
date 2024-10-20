@@ -14,7 +14,6 @@ format:
     logo: untref.png
     css: logo.css
     incremental: true  
-    #footer: "[https://github.com/SoyAndrea/Indicadores-economicos](https://github.com/SoyAndrea/Indicadores-economicos)"
 ---
 
 ## Planteamiento del problema 
