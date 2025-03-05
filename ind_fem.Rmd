@@ -1,0 +1,165 @@
+---
+title: "ind_fem"
+author: "agomezvargas"
+date: "2024-09-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(plotly)
+
+
+indfem = openxlsx::read.xlsx("data/demografia_24.xlsx", sheet = "ind_fem") %>% 
+  mutate(indf = round(indf,0))
+
+
+  indfem$Edad <- factor(indfem$Edad,
+                        levels = c("Total",
+                                   "0-4","5-9","10-14","15-19","20-24","25-29",
+                                   "30-34","35-39","40-44","45-49","50-54",
+                                   "55-59","60-64","65-69","70-74","75-79",
+                                   "80-84","85+"))
+```
+
+# esta se dificulta un poco en el dashboard y se solapa todo 
+
+```{r}
+
+g1 <-indfem %>% 
+  #filter(Censo %in% c(2001,2010, 2022)) %>% 
+  filter(Censo == 2022) %>% 
+ggplot(aes(x = Edad, y= indf, fill = grupo)) +
+  geom_col() +
+  #scale_fill_manual(values = c("#7fa19e","#005355")) +
+  scale_fill_manual(values = c("#efcf83","#E6B43D")) +
+  scale_y_continuous(limits = c(0,250), breaks = seq(0,250, by = 50)) +
+  facet_wrap(~Censo,ncol = 1) +
+  labs(
+    y = "mujeres cada 100 varones",
+    x = "grupos de edad"
+  ) +
+  theme_bw()
+
+ggplotly(g1)  %>% layout(showlegend = FALSE)
+
+```
+
+# Podemos mostrar por año 
+
+
+```{r}
+g2 <-indfem %>% 
+  #filter(Censo %in% c(2001,2010, 2022)) %>% 
+  filter(Censo == 2022) %>% 
+ggplot(aes(x = Edad, y= indf, fill = grupo)) +
+  geom_col() +
+  scale_fill_manual(values = c("#efcf83","#E6B43D")) +
+  #scale_fill_manual(values = c("#7fa19e","#005355")) +
+  scale_y_continuous(limits = c(0,250), breaks = seq(0,250, by = 50)) +
+  scale_x_discrete(limits=rev)+
+  facet_wrap(~Censo,ncol = 1) +
+  coord_flip()
+  labs(
+    y = "mujeres cada 100 varones",
+    x = "grupos de edad"
+  ) +
+  theme_bw()
+
+ggplotly(g2)  %>% layout(showlegend = FALSE)
+```
+
+
+```{r}
+g3 <-indfem %>% 
+  #filter(Censo %in% c(2001,2010, 2022)) %>% 
+  filter(Censo %in% c(1914,2022)) %>% 
+ggplot(aes(x = Edad, y= indf, fill = grupo)) +
+  geom_col() +
+  #scale_fill_manual(values = c("#efcf83","#E6B43D")) +
+  scale_fill_manual(values = c("#7fa19e","#005355")) +
+  scale_y_continuous(limits = c(0,250), breaks = seq(0,250, by = 50)) +
+  scale_x_discrete(limits=rev)+
+  facet_wrap(~Censo,ncol = 2) +
+  coord_flip()
+  labs(
+    y = "mujeres cada 100 varones",
+    x = "grupos de edad"
+  ) +
+  theme_bw()
+
+ggplotly(g3)  %>% layout(showlegend = FALSE)
+```
+
+
+
+# pero primero en serio el total nacional censo 1914 a 2022
+
+```{r}
+indfem %>% 
+  filter(grupo == "Total",
+         !Censo %in%c(1869,1895)) %>% 
+ggplot(aes(Censo, indf)) +
+  #geom_point( size = 3) +
+  # geom_point(aes(x = Censo, y = indf, group = indf), colour = "#005355", size = 2) +
+  # geom_line (aes(x = Censo, y = indf, group = indf), colour = "#005355", size = 1) +
+  geom_point(aes(x = Censo, y = indf), colour = "#005355", size = 3) +
+  #geom_line (aes(x = Censo, y = indf, group = indf), colour = "#005355", size = 1) +
+  scale_y_continuous(limits = c(70,110),  breaks = seq(70,110, by = 10)) +
+   labs(
+    y = "mujeres cada 100 varones",
+    x = "Censo nacional de población"
+  ) +
+  theme_bw()
+
+```
+
+
+
+
+```{r}
+gserie <- indfem %>%
+  filter(grupo == "Total",
+         !Censo %in% c(1869,1895)) %>%
+  ggplot(aes(x = Censo, y = indf)) +   
+  geom_line(aes(group = 1), colour = "#7fa19e", linewidth = 1) +  
+  geom_point(colour = "#005355", size = 2) +
+  scale_y_continuous(limits = c(70, 110), breaks = seq(70, 110, by = 10)) +
+  labs(
+    y = "Mujeres cada 100 varones",
+    x = "Censo Nacional de Población"
+  ) +
+  theme_bw()
+    # geom_text(aes(label = round(indf, 1)),          # Etiqueta con los valores de indf
+    #         vjust = -1,                          # Ajusta la posición vertical del texto (arriba del punto)
+    #         colour = "black",                    # Color del texto
+    #         size = 3)                     
+
+
+ggplotly(gserie)  %>% layout(showlegend = FALSE)
+```
+
+```{r}
+indfem %>%
+  filter(grupo == "Total",
+         !Censo %in% c(1869,1895)) %>%
+  ggplot(aes(x = Censo, y = indf)) +
+  geom_segment(aes(x = Censo, xend = Censo, y = 70, yend = indf),  # Segmento desde el eje hasta indf
+               colour = "#273954", size = 1) +    # Color y tamaño del segmento
+  geom_point(colour = "#273954", size = 4) +      # Punto en el extremo del segmento
+  scale_y_continuous(limits = c(70, 110), breaks = seq(70, 110, by = 10)) +
+  labs(
+    y = "Mujeres cada 100 varones",
+    x = "Censo nacional de población"
+  ) +
+  theme_bw() +
+  geom_text(aes(label = round(indf, 1)),          # Etiqueta con los valores de indf
+            vjust = -1,                          # Ajusta la posición vertical del texto (arriba del punto)
+            colour = "black",                    # Color del texto
+            size = 3)                         # Tamaño del texto
+
+
+```
+

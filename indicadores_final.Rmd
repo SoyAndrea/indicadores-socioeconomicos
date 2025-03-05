@@ -1,0 +1,192 @@
+---
+title: "indicadores_final"
+author: "Andrea Gomez Vargas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(openxlsx)
+library(eph)
+library(patchwork)
+library(scales)
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# EPH
+pobreza <- read.xlsx("data/datos_tp.xlsx", sheet = "pobreza")
+estrato <- read.xlsx("data/datos_tp.xlsx", sheet = "estrato")
+ingresos  <- read.xlsx("data/datos_tp.xlsx", sheet = "ingresos")
+
+# CAPITAL HUMANO 
+bess <- read.xlsx("data/datos_tp.xlsx", sheet = "bess-1")
+
+# CENSO 
+salud  <- read.xlsx("data/datos_tp.xlsx", sheet = "salud")
+jubilacion <- read.xlsx("data/datos_tp.xlsx", sheet = "jubilacion")
+salud2 <- read.xlsx("data/datos_tp.xlsx", sheet = "salud2")
+
+piramide <- read.xlsx("data/datos_tp.xlsx", sheet = "piramide")
+```
+
+# Estructura de la población por sexo y grupo de edad. Total del país. Años 1970 y 2022
+
+```{r}
+piramide$grupo_edad = ifelse(piramide$grupo_edad %in% "0-4", "00-04", piramide$grupo_edad)
+piramide$grupo_edad = ifelse(piramide$grupo_edad %in% "5-9", "05-09", piramide$grupo_edad)
+
+
+g_piramide <- piramide %>%
+  mutate(poblacion = as.numeric(poblacion)) %>%  # Convertir a numérico
+  group_by(censo) %>%
+  mutate(porcentaje = as.numeric(poblacion / sum(poblacion) * 100)) %>%
+  ungroup() %>%
+  mutate(porcentaje = ifelse(sexo == "V", -porcentaje, porcentaje)) %>% 
+  mutate(sexo =  ifelse(sexo == "V", "varones", "mujeres")) %>% 
+  ggplot(aes(x = grupo_edad, y = porcentaje, fill = sexo)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  # Rotar la gráfica
+  facet_wrap(~censo) +  # Separar por año
+  # geom_text(aes(label = round(abs(porcentaje), 1)),  # Etiquetas con porcentaje redondeado
+  #           position = position_stack(vjust = 0.5),  # Centrado en la barra
+  #           size = 2.5, color = "white") +  # Tamaño y color del texto
+  scale_y_continuous(breaks = seq(-10, 10, by = 2), 
+                     labels = paste0(c(seq(-10, 0, by = 2)*-1, seq(2, 10, by = 2)), "%")) +
+  scale_fill_manual(values = c("#29335c","#e4572e")) +
+  labs(
+    y  = "porcentaje",
+    x  = "grupo de edad") +
+  #theme_bw() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+
+g_piramide
+
+ggsave(filename = "graficos/piramide.png", plot =g_piramide, width = 20, height = 10, units = "cm")
+```
+
+
+## Tasas de actividad, empleo y desocupación de las poblacipon de 14 años y más por sexo
+
+```{r}
+
+base_eph <- get_total_urbano(year = 2018:2023,type = "individual")
+
+
+tasas_trabajo <- base_eph %>%
+    filter(CH06 >= 14) %>% 
+    group_by(ANO4, CH04) %>% 
+    summarise(poblacion                  = sum(PONDERA),
+              Ocupados                   = sum(PONDERA[ESTADO == 1]),
+              Desocupados                = sum(PONDERA[ESTADO == 2]),
+              PEA                        = Ocupados + Desocupados,
+              tasa_actividad           = round((PEA/poblacion)*100, 1),
+              tasa_empleo              = round((Ocupados/poblacion)*100,1),
+              tasa_desocupacion        = round((Desocupados/PEA)*100, 1)
+              ) %>% 
+  select(ANO4,CH04, tasa_actividad, tasa_empleo, tasa_desocupacion) %>% 
+  rename(sexo = CH04) %>% 
+  mutate(sexo = ifelse(sexo == 1, "Varones", "Mujeres"))
+
+
+tasas_trabajo <- tasas_trabajo %>% 
+  pivot_longer(cols = starts_with("tasa"), 
+               names_to = "tasa", 
+               values_to = "porcentaje") %>% 
+  mutate(tasa = str_replace_all(tasa, "_", " "),
+         tasa = fct_relevel(tasa, c("tasa actividad", "tasa empleo", "tasa desocupacion")))
+
+ggplot(tasas_trabajo, aes(x = factor(ANO4), y = porcentaje, fill = sexo)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~tasa) +
+  ylim(c(0,75)) +
+  scale_fill_manual(values = c("#29335c","#e4572e")) +
+  geom_text(aes(label = porcentaje), 
+            position = position_dodge(width = 1), 
+            vjust = -0.3, size = 2.5) + 
+  labs(
+    x = " ",
+    y = "Porcentaje",
+    fill = "Sexo"
+  ) +
+  #theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank()
+    #axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+
+
+#write.xlsx(tasas_trabajo, "tasas_trabajo.xlsx")
+```
+
+
+
+## Brecha de género e ingreso medio de la ocupación principal, por sexo de la población asalariada de 14 años y
+más sin descuento jubilatorio.
+
+```{r}
+sub_base <- base_eph %>% 
+  filter(CH06   >= 14,
+         ESTADO == 1,
+         PP07H  == 2,
+         P21    != -9) %>% #No tiene descuento jubilatorio 
+  organize_cno() %>% 
+  organize_labels() %>% 
+  select(1:CH06, P21, PONDIIO)
+
+sub_base$P21 <- as.numeric(sub_base$P21)
+
+ingreso <- sub_base  %>% 
+  group_by(ANO4, CH04) %>% 
+  summarise(ingreso_medio = round(weighted.mean(P21, w = PONDIIO),0)) %>% 
+  select(ANO4, CH04, ingreso_medio) %>% 
+  pivot_wider(names_from = CH04, values_from = ingreso_medio) %>% 
+  rename(Mujeres = Mujer, Varones  = Varon) %>% 
+  relocate(Mujeres, .before = Varones) %>% 
+  mutate(Brecha = round(Mujeres/Varones*100,2),
+         across(Mujeres:Varones, ~round(., 0))) %>% 
+  pivot_longer(cols = Mujeres:Brecha, names_to = 'sexo',values_to = 'ingreso') %>% 
+  arrange(ANO4)
+
+
+write.xlsx(ingreso, "ingreso.xlsx")
+
+ingreso2 <- ingreso %>% 
+  pivot_longer(cols = c(Varones, Mujeres), 
+               names_to = "Genero", 
+               values_to = "ingreso") %>% 
+  mutate(Genero = factor(Genero, levels = c("Mujeres", "Varones"))) 
+  
+  
+# Creamos el gráfico
+g1 <- ggplot(ingreso2, aes(y = ANO4, x = ingreso, color = Genero)) +
+  geom_segment(data = ingreso, aes(x = Mujeres, xend = Varones, y = ANO4, yend = ANO4), 
+               color = "gray") +  # Línea que conecta los puntos con el eje
+  geom_point(size = 4) +   # Lollipops
+  geom_text(aes(label = paste0(label_comma()(ingreso))), vjust = -1, size = 2) +
+  scale_color_manual(values = c("#29335c", "#e4572e")) + # Ajusta los colores a tu gusto
+  labs(
+    x = "ingreso medio de la ocupación principal",
+    y = "Año"
+  ) +
+  #theme_bw() + 
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank()
+  )
+
+g2 <- ggplot(ingreso2, aes(x = ANO4, y = Brecha)) +
+  geom_point(size = 4, color = "#001524") +  # Color de los puntos
+  geom_line(aes(group = 1), color = "#001524") +  # Color de la línea
+  ylim(0.5, 1)  # Ajusta el rango del eje Y
+
+g1 + g2
+```
+
