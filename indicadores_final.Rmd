@@ -13,6 +13,8 @@ library(openxlsx)
 library(eph)
 library(patchwork)
 library(scales)
+library(readxl)
+options(scipen = 999)
 ```
 
 
@@ -21,7 +23,7 @@ library(scales)
 # EPH
 pobreza <- read.xlsx("data/datos_tp.xlsx", sheet = "pobreza")
 estrato <- read.xlsx("data/datos_tp.xlsx", sheet = "estrato")
-ingresos  <- read.xlsx("data/datos_tp.xlsx", sheet = "ingresos")
+
 
 # CAPITAL HUMANO 
 bess <- read.xlsx("data/datos_tp.xlsx", sheet = "bess-1")
@@ -56,7 +58,7 @@ g_piramide <- piramide %>%
   facet_wrap(~censo) +  # Separar por año
   scale_y_continuous(breaks = seq(-10, 10, by = 2), 
                      labels = paste0(c(seq(-10, 0, by = 2)*-1, seq(2, 10, by = 2)), "%")) +
-  scale_fill_manual(values = c("#0b3954","#e4572e")) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) + 
   labs(
     y  = "porcentaje",
     x  = "grupo de edad") +
@@ -105,7 +107,7 @@ tasas <- ggplot(tasas_trabajo, aes(x = factor(ANO4), y = porcentaje, fill = sexo
   geom_col(position = "dodge") +
   facet_wrap(~tasa) +
   ylim(c(0,75)) +
-  scale_fill_manual(values = c("#29335c","#e4572e")) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) + 
   geom_text(aes(label = porcentaje), 
             position = position_dodge(width = 1), 
             vjust = -0.3, size = 2.5) + 
@@ -151,9 +153,9 @@ ingreso <- sub_base  %>%
   rename(Mujeres = Mujer, Varones  = Varon) %>% 
   relocate(Mujeres, .before = Varones) %>% 
   mutate(Brecha = round(Mujeres/Varones*100,2),
-         across(Mujeres:Varones, ~round(., 0))) %>% 
-  pivot_longer(cols = Mujeres:Brecha, names_to = 'sexo',values_to = 'ingreso') %>% 
-  arrange(ANO4)
+         across(Mujeres:Varones, ~round(., 0))) #%>% 
+  # pivot_longer(cols = Mujeres:Brecha, names_to = 'sexo',values_to = 'ingreso') %>% 
+  # arrange(ANO4)
 
 
 #write.xlsx(ingreso, "ingreso.xlsx")
@@ -172,9 +174,11 @@ g1 <- ggplot(ingreso2, aes(y = ANO4, x = ingreso, color = Genero)) +
   geom_segment(data = ingreso, aes(x = Mujeres, xend = Varones, y = ANO4, yend = ANO4), 
                color = "black") +  # Línea que conecta los puntos con el eje
   geom_point(size = 3) +   # Lollipops
-  geom_text(aes(label = paste0(label_comma()(ingreso))), angle = 45, vjust = -1, hjust = 0,  size = 2.5) +
-  scale_color_manual(values = c("#29335c", "#e4572e")) + # Ajusta los colores a tu gusto
-  scale_x_continuous(limits = c(0, 120000), breaks = seq(0, 120000, by = 20000), labels = label_comma()) +
+  geom_text(aes(label = paste0(scales::label_number(big.mark = ".")(ingreso))), 
+          angle = 45, vjust = -1, hjust = 0, size = 2.5) +
+  scale_color_manual(values = c("#0cce6b","#083d77")) + # Ajusta los colores a tu gusto
+  scale_x_continuous(limits = c(0, 120000), breaks = seq(0, 120000, by = 20000), 
+                     labels = label_number(big.mark = ".", decimal.mark = ",")) +
   scale_y_continuous(limits = c(2018, 2024), breaks = seq(2018, 2024, by = 1)) +
   #ylim(2018, 2024) +
   labs(
@@ -188,7 +192,8 @@ g1 <- ggplot(ingreso2, aes(y = ANO4, x = ingreso, color = Genero)) +
 g2 <- ggplot(ingreso2, aes(x = ANO4, y = Brecha)) +
   geom_point(size = 3, color = "#389e9e") +  # Color de los puntos
   geom_line(aes(group = 2), color = "#389e9e") +  # Color de la línea
-  geom_text(aes(label = Brecha), vjust = -1, size = 2, color = "black") +
+  geom_text(aes(label = scales::label_number(decimal.mark = ",")(Brecha)),  
+          vjust = -1, size = 2, color = "black") +
   ylim(50,100) + # Ajusta el rango del eje Y
   labs(
     y = "Brecha (%)",
@@ -197,6 +202,8 @@ g2 <- ggplot(ingreso2, aes(x = ANO4, y = Brecha)) +
   theme_bw()
 brecha_ingreso <- g1 + g2 + plot_layout(widths = c(3, 2))
 
+
+brecha_ingreso
 ggsave(filename = "graficos/brecha_ingreso.png", plot = brecha_ingreso, width = 20, height = 10, units = "cm")
 ```
 
@@ -329,8 +336,437 @@ previsional_anses <- ggplot(gbess, aes(sexo, value, fill = jubilacion))+
   labs(
     x = " ",
     y = "porcentaje",
-    fill = "percepción jubilatoria")
-ggsave(filename = "graficos/previsional_anses.png", plot = previsional_anses, width = 20, height = 10, units = "cm") 
+    fill = "percepción jubilatoria") 
+
+
+
+previsional_anses
+#ggsave(filename = "graficos/previsional_anses.png", plot = previsional_anses, width = 20, height = 10, units = "cm") 
 ```
 
+## Población en viviendas particulares en edad jubilatoria que percibe jubilación o pensión según sexo registrado al nacer. Total del país. Año 2001, 2010 y 2022
+
+```{r}
+jubilacion <- read.xlsx("data/datos_tp.xlsx", 
+    sheet = "jubilacion")
+
+jubilacion_censal <- jubilacion %>% 
+  filter(sexo != "total") %>% 
+ggplot(aes(x = factor(censo), y = porcentaje, fill = sexo)) +
+  geom_col(position = "dodge", width = 0.5) +
+  ylim(0,100) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) + 
+  geom_text(aes(label = porcentaje), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.7, size = 3) + 
+  labs(
+    x = "año censal",
+    y = "porcentaje",
+    fill = " "
+  )+
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+ggsave(filename = "graficos/jubilacion_censal.png", plot = jubilacion_censal , width = 20, height = 10, units = "cm") 
+
+```
+
+
+## Haber jubilatorio medio, según sexo y adhesión a moratoria y brechas de género. Total del país. Diciembre 2022 - Diciembre 2023 
+
+
+```{r}
+haber_jubilatorio <- read.xlsx("data/datos_tp.xlsx", sheet = "bess-2") %>% 
+  mutate(varones = round(varones,0),
+         mujeres = round(mujeres,0)) %>% 
+  pivot_longer(cols = c(mujeres, varones),names_to = "sexo", values_to = "haber")
+
+
+haber_medio <- ggplot(haber_jubilatorio, aes(x= factor(ano), y = haber, fill = sexo)) +
+  geom_col(position = "dodge", width = 0.5) +
+  geom_text(aes(label = paste0(scales::label_number(big.mark = ".", decimal.mark = ",")(haber))), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.7, size = 2) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) + 
+  scale_y_continuous(limits = c(0, 320000), breaks = seq(0, 320000, by = 50000), 
+                     labels = label_number(big.mark = ".", decimal.mark = ",")) +
+  facet_wrap(~beneficio) +
+  theme_bw() +
+  labs(
+    fill = " ",
+    x = "año",
+    y = "haber medio"
+  ) +
+  theme(legend.position = "bottom")
+
+ggsave(filename = "graficos/haber_medio.png", plot = haber_medio, width = 20, height = 10, units = "cm") 
+  
+```
+
+
+## Porcentaje de población en edad jubilatoria perceptora de ingresos por tipo de ingreso según sexo. Total nacional urbano. Años 2018 -2023
+
+
+```{r}
+ingresos  <- read.xlsx("data/datos_tp.xlsx", sheet = "ingresos")
+
+ingresos <- ingresos %>% 
+  filter(CH04 != "Total") %>% 
+  select(1,2, 7:9) %>% 
+  pivot_longer(cols = c(3:5), names_to = "tipo", values_to = "porcentaje") %>% 
+  mutate(tipo = 
+           case_when(tipo == "Ingresos.laborales" ~ "ingresos laborales",
+                     tipo == "Jubilación.o.pensión" ~ "jubilación o pensión",
+                     tipo == "Otros.ingresos.no.laborales" ~ "otros ingresos no laborales")) %>% 
+  rename(ano = "Año", sexo =  CH04)
+
+
+tipo_ingreso <- ggplot(ingresos, aes(ano, porcentaje, group = tipo, colour = tipo)) +
+  geom_point(size = 3) +
+  geom_line(linetype = 2,linewidth = 1) +
+  facet_wrap(~sexo) +
+  ylim(c(0,100)) +
+  scale_color_manual(values = c("#143939","#297373", "#389e9e"))+
+ theme_bw() +
+  labs(
+    y = "porcentaje",
+    x = "año",
+    colour = "tipo de ingreso"
+  ) +
+  geom_text(aes(label = porcentaje, group = tipo),vjust = -1, size =2, colour = "black") +
+ theme(legend.position = "top")
+
+
+#ggsave(filename = "graficos/tipo_ingreso.png", plot = tipo_ingreso, width = 20, height = 10, units = "cm") 
+  
+```
+
+
+## Porcentaje de población de 14 años y más por condición de actividad económica según sexo registrado al nacer y grupo de edad.Total del país. Año 2022
+
+```{r}
+
+act2 <- read.xlsx("data/datos_tp.xlsx", sheet = "act2") %>% 
+  pivot_longer(cols = c(activa, inactiva),names_to = "condicion", values_to = "porcentaje") %>% 
+  mutate(
+    grupo_edad = fct_relevel(grupo_edad, c("Total de Población", "14-19", "20-29","30-44","45-59","60-74","75 y más")),
+    condicion = fct_relevel(condicion, c("inactiva","activa"))
+         ) 
+
+actividad_edad <-ggplot(act2, aes(x = porcentaje, y = grupo_edad, fill = condicion)) +
+  geom_col() +
+  #scale_fill_manual(values = c("#297373", "#f0a1b7")) +
+  scale_fill_manual(values = c("#f0a1b7","#297373")) +
+  scale_y_discrete(limits=rev) +
+  facet_grid(~sexo) +
+  geom_text(aes(label = porcentaje, group = condicion),
+            position = position_stack(vjust = 0.5),
+            size = 3, colour = ifelse(act2$condicion == "activa", "white", "black")) +
+  labs(
+    y = "grupo de edad",
+    x = "porcentaje",
+    fill = "condición de actividad") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+actividad_edad 
+
+ggsave(filename = "graficos/actividad_edad.png", plot = actividad_edad, width = 20, height = 10, units = "cm") 
+  
+
+```
+
+
+## Distribución de la población de 14 años y más en viviendas particulares que asistió a un establecimiento educativo, por condición de actividad económica, según máximo nivel educativo alcanzado y sexo registrado al nacer. Total del país. Año 2022
+
+
+```{r}
+act1 <-  read.xlsx("data/datos_tp.xlsx", sheet = "act1") %>% 
+  pivot_longer(cols = c(varones, mujeres),names_to = "sexo", values_to = "porcentaje") %>% 
+  mutate(estudios = fct_relevel(estudios, 
+                                c( "Superior o universitario incompleto o completo" , "Secundario completo","Hasta secundario incompleto")),
+         cond_act = ifelse(cond_act == "Población economicamente inactiva", "inactiva", "activa"))
+
+actividad_estudios <- ggplot(act1, aes( x = porcentaje, y = sexo, fill = estudios)) +
+  geom_col() +
+  facet_grid(cond_act ~ .) +
+   geom_text(aes(label = porcentaje, group = estudios),
+            position = position_stack(vjust = 0.5),
+            size = 3, colour = "white") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = c("#143939","#297373", "#389e9e")) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom") +
+  labs(
+    y = " ",
+    fill = " "
+  )
+actividad_estudios
+
+
+#ggsave(filename = "graficos/actividad_estudios.png", plot = actividad_estudios, width = 20, height = 10, units = "cm") 
+ 
+
+```
+
+
+
+## Población de 65 años y más según condición de pobreza. Total 31 aglomerados. Primer semestre 2018-segundo semestre 2023. 
+
+```{r}
+gpobreza <- pobreza %>% 
+  select(1:2,5:6) %>% 
+  pivot_longer(cols = c(3:4), names_to = "pobreza", values_to = "value") %>% 
+  mutate(periodo =  paste0(anio, "-", semestre),
+         pobreza = ifelse(pobreza == "no_pobres", "No pobre", "Pobre")) 
+
+
+pobreza <- ggplot(gpobreza, aes(periodo, value, fill = pobreza)) +
+  geom_col() +
+  #scale_fill_manual(values = c("#297373", "#e9d758")) +
+  scale_fill_manual(values = c("#297373", "#f0a1b7")) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+  ) +
+  coord_flip() +
+  scale_x_discrete(limits=rev) +
+  geom_text(aes(label = value, group = pobreza), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, colour = ifelse(gpobreza$pobreza == "No pobre", "white", "black")) +
+  labs(
+    x = "periodo",
+    y = "porcentaje",
+    fill = " "
+  )
+
+
+ggsave(filename = "graficos/pobreza.png", plot = pobreza, width = 20, height = 10, units = "cm") 
+ 
+```
+
+
+## Población de 65 años y más según estrato generacional del hogar por sexo. Total nacional urbano. Años 2018-2023
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height= 5}
+
+estrato <- read.xlsx("data/datos_tp.xlsx", sheet = "estrato")
+
+estrato <- estrato %>% 
+  filter(Grupo !=  "Total",
+         Sexo != "Total") %>% 
+  select(1,2, 3, 9:11) %>% 
+  pivot_longer(cols = c(4:6), names_to = "tipo", values_to = "porcentaje") %>% 
+  mutate(tipo = case_when (tipo == "hogares.unipersonales" ~ "unipersonales",
+                tipo == "hogares.unigeneracionales" ~ "unigeneracionales",
+                tipo == "hogares.multigeneracionales" ~ "multigeneracionales"))
+
+
+
+
+estrato_edad <- ggplot(estrato, aes(Sexo, porcentaje, fill = tipo)) +
+  geom_col() +
+ scale_fill_manual(values = c("#143939","#297373", "#389e9e"))+
+ facet_grid(Grupo ~ ANO4) +
+ theme_bw() +
+  labs(
+    y = "porcentaje",
+    x = " ",
+    fill = "tipo de hogar "
+  ) +
+  geom_text(aes(label = porcentaje, group = Sexo),
+            position = position_stack(vjust = .5),size = 2, colour = "white") +
+ theme(legend.position = "bottom")
+
+
+
+ggsave(filename = "graficos/estrato_edad.png", plot = estrato_edad, width = 20, height = 10, units = "cm") 
+
+```
+
+
+
+## Tasa de participación de la población de 60 años y más en el trabajo no remunerado, por sexo y tipo de trabajo no remunerado. Año 2021 
+
+
+
+```{r}
+enut <- read.xlsx("data/datos_tp.xlsx", sheet = "enut") %>% 
+  mutate(tipo = fct_relevel(tipo, c("Trabajo no remunerado","Trabajo doméstico","Trabajo de cuidado","Trabajo voluntario")))
+
+enut_porcentaje <- ggplot(enut, aes(x = sexo, y =  porcentaje, fill = sexo)) +
+  geom_col() +
+  geom_text(aes(label = porcentaje), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.7, size = 3) +
+  facet_grid(.~tipo) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) +  
+  ylim(0,100) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  labs(
+    x = " "
+  )
+
+enut_porcentaje
+
+ggsave(filename = "graficos/enut_porcentaje.png", plot = enut_porcentaje, width = 20, height = 10, units = "cm") 
+
+```
+
+
+
+## Tiempo por participante (con simultaneidad) de la población de 60 años y más que participa en el trabajo no remunerado, por sexo y tipo de trabajo no remunerado. Año 2021  
+
+```{r}
+
+enut2 <- read.xlsx("data/datos_tp.xlsx", sheet = "enut2") %>% 
+  mutate(tipo = fct_relevel(tipo, c("Trabajo no remunerado","Trabajo doméstico","Trabajo de cuidado","Trabajo voluntario")),
+         horas = hms::as_hms(horas)
+         )
+
+
+
+
+enut2 <- read_excel("data/datos_tp.xlsx", sheet = "enut2")  %>% 
+  mutate(tipo = fct_relevel(tipo, c("Trabajo no remunerado","Trabajo doméstico","Trabajo de cuidado","Trabajo voluntario")),
+         horas = hms::as_hms(horas)
+         )
+
+
+enut_horas <- ggplot(enut2, aes(x = sexo, y =  horas, fill = sexo)) +
+  geom_col() +
+  geom_text(aes(label = horas), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.7, size = 3) +
+  facet_grid(.~tipo) +
+  scale_fill_manual(values = c("#0cce6b","#083d77")) +  
+  theme_bw() +
+  theme(legend.position = "none") +
+  labs(
+    x = " "
+  )
+
+enut_horas
+
+
+ggsave(filename = "graficos/enut_horas.png", plot = enut_horas, width = 20, height = 10, units = "cm") 
+```
+
+```{r}
+salud2 <- read.xlsx("data/datos_tp.xlsx", sheet = "salud2") %>% 
+  mutate(porcentaje = round(porcentaje,1))
+
+
+
+salud_censal <- ggplot(salud2, aes(x = sexo, y = porcentaje, fill = cobertura)) +
+  geom_col() +
+  facet_grid(~censo) +
+  geom_text(aes(label = porcentaje, group = cobertura), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, 
+            #colour = ifelse(salud2$cobertura == "si", "white", "black")
+            colour = "black"
+            ) +
+  scale_fill_manual(values = c("#f0a1b7", "#7fa19e")) +  
+  labs(
+    x = " ",
+    fill = "cobertura de salud"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+  )
+
+ggsave(filename = "graficos/salud_censal.png", plot = salud_censal, width = 20, height = 10, units = "cm") 
+
+
+```
+
+
+## Distribución porcentual de la población, por grupos  de edad y tipo de cobertura de salud. Total del país. Año 2022
+
+```{r}
+
+salud3 <- read.xlsx("data/datos_tp.xlsx", sheet = "salud3") %>% 
+  mutate(cobertura = fct_relevel(cobertura, c("Solo sistema público", 
+                                              "Programas o planes estatales de salud",
+                                              "Obra social o prepaga (Incluye PAMI)")),
+         grupo_edad = fct_relevel(grupo_edad, c("0-14 años", "15-64 años", "65 años y más"))
+         )
+
+
+salud_edades <- ggplot(salud3, aes(x = grupo_edad, y = porcentaje, fill = cobertura)) +
+  geom_col(width = 0.6) +
+  scale_fill_manual(values = c("#297373", "#143939","#389e9e")) +
+  geom_text(aes(label = porcentaje, group = cobertura), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, 
+            colour = "white"
+            ) +
+  labs(
+    x = "grandes grupos de edad",
+    fill = " "
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+  )
+
+ggsave(filename = "graficos/salud_edades.png", plot = salud_edades, width = 20, height = 10, units = "cm") 
+
+
+```
+
+
+## Estructura de la población por sexo y grupo de edad con jubilacion o pension. Total del país. Años 2022
+
+```{r}
+piramide <- read.xlsx("data/datos_tp.xlsx", sheet = "piramide2")
+
+piramide$grupo_edad = ifelse(piramide$grupo_edad %in% "0-4", "00-04", piramide$grupo_edad)
+piramide$grupo_edad = ifelse(piramide$grupo_edad %in% "5-9", "05-09", piramide$grupo_edad)
+
+
+  piramide$grupo_edad <- factor(piramide$grupo_edad,
+                        levels = c(
+                                   "00-04","05-09","10-14","15-19","20-24","25-29",
+                                   "30-34","35-39","40-44","45-49","50-54",
+                                   "55-59","60-64","65-69","70-74","75-79",
+                                   "80-84","85-89","90-94","95-99" ,"100 y más"))
+
+
+piramide2 <- piramide %>%
+  mutate(poblacion = as.numeric(poblacion)) %>%  # Convertir a numérico
+  mutate(
+    porcentaje = round(as.numeric(poblacion / sum(poblacion) * 100),2)
+    ) %>%
+  ungroup() %>%
+  mutate(porcentaje = ifelse(sexo == "V", -porcentaje, porcentaje)) %>% 
+  mutate(sexo =  ifelse(sexo == "V", "varones", "mujeres"))
+
+
+  piramide_jubilacion <- ggplot(piramide2, aes(x = grupo_edad, y = porcentaje, fill = sexo)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  # Rotar la gráfica
+  scale_y_continuous(
+          breaks = seq(-12, 12, by = 2), 
+          labels = paste0(c(seq(-12, 0, by = 2) * -1, seq(2, 12, by = 2)), "%"), 
+          limits = c(-12, 12)  # Fija los límites del eje Y
+   ) + 
+  scale_fill_manual(values = c("#0cce6b","#083d77")) + 
+  labs(
+    y  = "porcentaje",
+    x  = "grupo de edad") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+
+
+
+ggsave(filename = "graficos/piramide_jubilacion.png", plot =piramide_jubilacion, width = 20, height = 10, units = "cm")
+```
 
