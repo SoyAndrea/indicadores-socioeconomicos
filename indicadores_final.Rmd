@@ -654,6 +654,7 @@ enut_horas
 
 ggsave(filename = "graficos/enut_horas.png", plot = enut_horas, width = 20, height = 10, units = "cm") 
 ```
+## 
 
 ```{r}
 salud2 <- read.xlsx("data/datos_tp.xlsx", sheet = "salud2") %>% 
@@ -680,6 +681,7 @@ salud_censal <- ggplot(salud2, aes(x = sexo, y = porcentaje, fill = cobertura)) 
     legend.position = "bottom"
   )
 
+salud_censal
 ggsave(filename = "graficos/salud_censal.png", plot = salud_censal, width = 20, height = 10, units = "cm") 
 
 
